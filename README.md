@@ -81,116 +81,115 @@ The ER diagram defines the core entities, their attributes, and relationships.
 
 ### c. Technology-Oriented Schema
 
-The database schema is designed for PostgreSQL, with primary keys, foreign keys, and constraints.
+The database schema is designed for **PostgreSQL**, with primary keys, foreign keys, and constraints.
 
-'''
+```sql
 -- Destination Table
 CREATE TABLE public.destination (
-    id uuid PRIMARY KEY,
-    created timestamp without time zone,
-    created_by varchar(255),
-    updated timestamp without time zone,
-    updated_by varchar(255),
-    active boolean,
-    express_id uuid REFERENCES public.express(id),
-    cost double precision,
-    from_location smallint,
-    to_location smallint
+    id UUID PRIMARY KEY,
+    created TIMESTAMP WITHOUT TIME ZONE,
+    created_by VARCHAR(255),
+    updated TIMESTAMP WITHOUT TIME ZONE,
+    updated_by VARCHAR(255),
+    active BOOLEAN,
+    express_id UUID REFERENCES public.express(id),
+    cost DOUBLE PRECISION,
+    from_location SMALLINT,
+    to_location SMALLINT
 );
 
 -- Express Table
 CREATE TABLE public.express (
-    id uuid PRIMARY KEY,
-    created timestamp without time zone,
-    created_by varchar(255),
-    updated timestamp without time zone,
-    updated_by varchar(255),
-    active boolean,
-    express_description varchar(255),
-    express_name varchar(255),
-    express_logo varchar(255),
-    express_profile varchar(255)
+    id UUID PRIMARY KEY,
+    created TIMESTAMP WITHOUT TIME ZONE,
+    created_by VARCHAR(255),
+    updated TIMESTAMP WITHOUT TIME ZONE,
+    updated_by VARCHAR(255),
+    active BOOLEAN,
+    express_description VARCHAR(255),
+    express_name VARCHAR(255),
+    express_logo VARCHAR(255),
+    express_profile VARCHAR(255)
 );
 
 -- Bus Table
 CREATE TABLE public.bus (
-    id uuid PRIMARY KEY,
-    created timestamp without time zone,
-    created_by varchar(255),
-    updated timestamp without time zone,
-    updated_by varchar(255),
-    active boolean,
-    bus_name varchar(255),
-    bus_size integer,
-    plate_no varchar(255),
-    express_id uuid REFERENCES public.express(id),
-    driver uuid
+    id UUID PRIMARY KEY,
+    created TIMESTAMP WITHOUT TIME ZONE,
+    created_by VARCHAR(255),
+    updated TIMESTAMP WITHOUT TIME ZONE,
+    updated_by VARCHAR(255),
+    active BOOLEAN,
+    bus_name VARCHAR(255),
+    bus_size INTEGER,
+    plate_no VARCHAR(255),
+    express_id UUID REFERENCES public.express(id),
+    driver UUID
 );
 
 -- Users Table
 CREATE TABLE public.users (
-    id uuid PRIMARY KEY,
-    created timestamp without time zone,
-    created_by varchar(255),
-    updated timestamp without time zone,
-    updated_by varchar(255),
-    active boolean,
-    email varchar(255),
-    names varchar(255),
-    national_id varchar(255),
-    password varchar(255),
-    phone varchar(255),
-    username varchar(255),
-    user_express uuid REFERENCES public.express(id),
-    user_role varchar(255),
-    profile varchar(255)
+    id UUID PRIMARY KEY,
+    created TIMESTAMP WITHOUT TIME ZONE,
+    created_by VARCHAR(255),
+    updated TIMESTAMP WITHOUT TIME ZONE,
+    updated_by VARCHAR(255),
+    active BOOLEAN,
+    email VARCHAR(255),
+    names VARCHAR(255),
+    national_id VARCHAR(255),
+    password VARCHAR(255),
+    phone VARCHAR(255),
+    username VARCHAR(255),
+    user_express UUID REFERENCES public.express(id),
+    user_role VARCHAR(255),
+    profile VARCHAR(255)
 );
 
 -- Schedule Table
 CREATE TABLE public.schedule (
-    id uuid PRIMARY KEY,
-    created timestamp without time zone,
-    created_by varchar(255),
-    updated timestamp without time zone,
-    updated_by varchar(255),
-    active boolean,
-    time varchar(255),
-    plate_no uuid,
-    destination_id uuid REFERENCES public.destination(id),
-    express_id uuid REFERENCES public.express(id),
-    date varchar(255),
-    bus_id uuid REFERENCES public.bus(id)
+    id UUID PRIMARY KEY,
+    created TIMESTAMP WITHOUT TIME ZONE,
+    created_by VARCHAR(255),
+    updated TIMESTAMP WITHOUT TIME ZONE,
+    updated_by VARCHAR(255),
+    active BOOLEAN,
+    time VARCHAR(255),
+    plate_no UUID,
+    destination_id UUID REFERENCES public.destination(id),
+    express_id UUID REFERENCES public.express(id),
+    date VARCHAR(255),
+    bus_id UUID REFERENCES public.bus(id)
 );
 
 -- Ticket Table
 CREATE TABLE public.ticket (
-    id uuid PRIMARY KEY,
-    created timestamp without time zone,
-    created_by varchar(255),
-    updated timestamp without time zone,
-    updated_by varchar(255),
-    active boolean,
-    date timestamp without time zone,
-    names varchar(255),
-    phone varchar(255),
-    express_id uuid REFERENCES public.express(id),
-    pay_state varchar(255),
-    ticket_number integer,
-    seat_no integer,
-    total_amount double precision,
-    schedule_id uuid REFERENCES public.schedule(id),
-    bus_plate_no varchar(255)
+    id UUID PRIMARY KEY,
+    created TIMESTAMP WITHOUT TIME ZONE,
+    created_by VARCHAR(255),
+    updated TIMESTAMP WITHOUT TIME ZONE,
+    updated_by VARCHAR(255),
+    active BOOLEAN,
+    date TIMESTAMP WITHOUT TIME ZONE,
+    names VARCHAR(255),
+    phone VARCHAR(255),
+    express_id UUID REFERENCES public.express(id),
+    pay_state VARCHAR(255),
+    ticket_number INTEGER,
+    seat_no INTEGER,
+    total_amount DOUBLE PRECISION,
+    schedule_id UUID REFERENCES public.schedule(id),
+    bus_plate_no VARCHAR(255)
 );
 
 -- Destination_Schedule Join Table
 CREATE TABLE public.destination_schedule (
-    schedule_id uuid REFERENCES public.schedule(id),
-    destination_id uuid REFERENCES public.destination(id),
+    schedule_id UUID REFERENCES public.schedule(id),
+    destination_id UUID REFERENCES public.destination(id),
     PRIMARY KEY(schedule_id, destination_id)
 );
 
-'''
-
+```
 ---
 
 ## 3. Front-End Design
