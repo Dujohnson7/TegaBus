@@ -83,7 +83,7 @@ The ER diagram defines the core entities, their attributes, and relationships.
 
 The database schema is designed for PostgreSQL, with primary keys, foreign keys, and constraints.
 
-text '''
+'''
 -- Destination Table
 CREATE TABLE public.destination (
     id uuid PRIMARY KEY,
