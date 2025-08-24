@@ -50,9 +50,8 @@ TegaBus addresses these issues by providing a platform where users can browse ex
 
 The ER diagram defines the core entities, their attributes, and relationships.
 
-![ER Diagram](screenshoot/erDiagram.png)
+![ER Diagram](screenshoot/TEGABUS_ERD.png)
 
-> Note: The Mermaid diagram above will render visually on platforms like GitHub, which support Mermaid syntax.
 
 ### b. Domain Concepts
 
