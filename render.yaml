@@ -34,6 +34,6 @@ services:
 databases:
   # PostgreSQL Database
   - name: tegabus-db
-    databaseName: tegabus_db
+    databaseName: tegabus_db_321w
     user: dujohnson7
     plan: starter
