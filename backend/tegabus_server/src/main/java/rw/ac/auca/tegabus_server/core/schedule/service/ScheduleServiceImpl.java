@@ -29,6 +29,7 @@ public class ScheduleServiceImpl implements IScheduleService {
             found.setDestination(theSchedule.getDestination());
             found.setBus(theSchedule.getBus());
             found.setTime(theSchedule.getTime());
+            found.setDate(theSchedule.getDate());
             return scheduleRepository.save(found);
         }
         throw new ObjectNotFoundException(Schedule.class, "Schedule Not Found");
@@ -59,5 +60,15 @@ public class ScheduleServiceImpl implements IScheduleService {
     @Override
     public List<Schedule> findAllByState(Boolean state) {
         return scheduleRepository.findAllByActive(Boolean.TRUE);
+    }
+
+    @Override
+    public List<Schedule> findSchedulesByExpress_IdAndDriver_IdAndState(UUID expressId, UUID driverId, Boolean state) {
+        return scheduleRepository.findSchedulesByExpress_IdAndDriver_IdAndActive(expressId, driverId, Boolean.TRUE);
+    }
+
+    @Override
+    public List<Schedule> findAllByCurrentDateAndAvailableSeats() {
+        return scheduleRepository.findAllByCurrentDateAndAvailableSeats(Boolean.TRUE);
     }
 }

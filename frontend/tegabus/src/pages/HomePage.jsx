@@ -1,6 +1,67 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 const HomePage = () => {
+  const [expresses, setExpresses] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [destinations, setDestinations] = useState([]); // New state for destinations
+  const [tickets, setTickets] = useState([]); // New state for tickets
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Fetch expresses
+    axios
+      .get("http://localhost:5000/api/tegaTicket/express")
+      .then((response) => {
+        setExpresses(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching expresses:", error);
+      });
+
+    // Fetch schedules
+    axios
+      .get("http://localhost:5000/api/tegaTicket/schedule")
+      .then((response) => {
+        console.log("All schedules from API:", response.data);
+        if (!Array.isArray(response.data)) {
+          console.error("Invalid API response: Expected an array");
+          setError("Invalid schedule data received from server");
+          setLoading(false);
+          return;
+        }
+        setSchedules(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching schedules:", error);
+        setError("Failed to fetch schedules. Please try again later.");
+      });
+
+    // Fetch destinations
+    axios
+      .get("http://localhost:5000/api/tegaTicket/destination")
+      .then((response) => {
+        setDestinations(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching destinations:", error);
+      });
+
+    // Fetch tickets
+    axios
+      .get("http://localhost:5000/api/tegaTicket/ticket")
+      .then((response) => {
+        setTickets(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching tickets:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <>
       {/* Navbar */}
@@ -54,14 +115,6 @@ const HomePage = () => {
                 <div className="col-md-4 d-flex align-items-center">
                   <form action="#" className="request-form ftco-animate bg-primary">
                     <h2>Make your trip</h2>
-                    <div className="form-group">
-                      <label className="label">Name</label>
-                      <input type="text" className="form-control" placeholder="Name" />
-                    </div>
-                    <div className="form-group">
-                      <label className="label">Phone</label>
-                      <input type="text" className="form-control" placeholder="Phone" />
-                    </div>
                     <div className="form-group">
                       <label className="label">Express</label>
                       <select className="form-control">
@@ -156,67 +209,74 @@ const HomePage = () => {
           <div className="row justify-content-center">
             <div className="col-md-12 heading-section text-center ftco-animate mb-5">
               <span className="subheading">TegaBus</span>
-              <h2 className="mb-2">Express</h2>
+              <h2 className="mb-2">Available Schedules</h2>
             </div>
           </div>
-          <div className="row">
-            <div className="col-md-12">
-              <div className="carousel-car owl-carousel">
-                <div className="item">
-                  <div className="car-wrap rounded ftco-animate">
-                    <div className="img rounded d-flex align-items-end" style={{ backgroundImage: "url('/images/ritcobus.jpg')" }} />
-                    <div className="text">
-                      <h2 className="mb-0"><a href="#">Ritco</a></h2>
-                      <div className="d-flex mb-3">
-                        <span className="cat">Saa 12:30</span>
-                        <p className="price ml-auto">1890 RWF </p>
+          {loading ? (
+            <div className="text-center">
+              <p>Loading available schedules...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center">
+              <p>{error}</p> 
+            </div>
+          ) : schedules.length === 0 ? (
+            <div className="text-center">
+              <p>No available schedules found for today.</p> 
+            </div>
+          ) : (
+            <div className="row">
+              <div className="col-md-12">
+                <div className="carousel-car owl-carousel">
+                  {schedules.map((schedule) => (
+                    <div className="item" key={schedule.id}>
+                      <div className="car-wrap rounded ftco-animate">
+                        <div
+                          className="img rounded d-flex align-items-end"
+                          style={{
+                            backgroundImage: `url(http://localhost:5000/uploads/${schedule.express?.expressProfile})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            height: '200px'
+                          }}
+                        ></div>
+                        <div className="text">
+                          <h2 className="mb-0"><a href="#">{schedule.express?.expressName || 'Unknown Express'}</a></h2>
+                          <div className="d-flex mb-3">
+                            <span className="cat">saa {schedule.time || 'N/A'}</span>
+                            <p className="price ml-auto">{schedule.destination?.cost ? `${schedule.destination.cost} RWF` : 'N/A'}</p>
+                          </div>
+                          <div className="d-flex mb-2">
+                            <small className="text-muted">
+                              From: {schedule.destination?.fromLocation || 'N/A'}
+                            </small>
+                          </div>
+                          <div className="d-flex mb-2">
+                            <small className="text-muted">
+                              To: {schedule.destination?.toLocation || 'N/A'}
+                            </small>
+                          </div>
+                          <div className="d-flex mb-3">
+                            <small className="text-muted">
+                              Seats available: {schedule.availableSeats != null ? schedule.availableSeats : 'N/A'}
+                            </small>
+                          </div>
+                          <p className="d-flex mb-0 d-block">
+                            <a href={`/booking?scheduleId=${schedule.id}`} className="btn btn-primary py-2 mr-1">
+                              Book now
+                            </a>
+                            <a href={`/express/${schedule.express?.id || ''}`} className="btn btn-secondary py-2 ml-1">
+                              Details
+                            </a>
+                          </p>
+                        </div>
                       </div>
-                      <p className="d-flex mb-0 d-block"><a href="#" className="btn btn-primary py-2 mr-1">Book now</a> <a href="#" className="btn btn-secondary py-2 ml-1">Details</a></p>
                     </div>
-                  </div>
-                </div>
-                <div className="item">
-                  <div className="car-wrap rounded ftco-animate">
-                    <div className="img rounded d-flex align-items-end" style={{ backgroundImage: "url('/images/royalbus.avif')" }} />
-                    <div className="text">
-                      <h2 className="mb-0"><a href="#">Royal Express</a></h2>
-                      <div className="d-flex mb-3">
-                        <span className="cat">Saa 12:30</span>
-                        <p className="price ml-auto">1890 RWF </p>
-                      </div>
-                      <p className="d-flex mb-0 d-block"><a href="#" className="btn btn-primary py-2 mr-1">Book now</a> <a href="#" className="btn btn-secondary py-2 ml-1">Details</a></p>
-                    </div>
-                  </div>
-                </div>
-                <div className="item">
-                  <div className="car-wrap rounded ftco-animate">
-                    <div className="img rounded d-flex align-items-end" style={{ backgroundImage: "url('/images/vilcono bus.jpg')" }} />
-                    <div className="text">
-                      <h2 className="mb-0"><a href="#">Virunga Express</a></h2>
-                      <div className="d-flex mb-3">
-                        <span className="cat">Saa 12:30</span>
-                        <p className="price ml-auto">1890 RWF </p>
-                      </div>
-                      <p className="d-flex mb-0 d-block"><a href="#" className="btn btn-primary py-2 mr-1">Book now</a> <a href="#" className="btn btn-secondary py-2 ml-1">Details</a></p>
-                    </div>
-                  </div>
-                </div>
-                <div className="item">
-                  <div className="car-wrap rounded ftco-animate">
-                    <div className="img rounded d-flex align-items-end" style={{ backgroundImage: "url('/images/horizonBus.jpg')" }} />
-                    <div className="text">
-                      <h2 className="mb-0"><a href="#">Horizon Express</a></h2>
-                      <div className="d-flex mb-3">
-                        <span className="cat">Saa 12:30</span>
-                        <p className="price ml-auto">1890 RWF </p>
-                      </div>
-                      <p className="d-flex mb-0 d-block"><a href="#" className="btn btn-primary py-2 mr-1">Book now</a> <a href="#" className="btn btn-secondary py-2 ml-1">Details</a></p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -237,7 +297,7 @@ const HomePage = () => {
           </div>
         </div>
       </section>
- 
+
       <section className="ftco-section testimony-section bg-light">
         <div className="container">
           <div className="row justify-content-center mb-5">
@@ -249,37 +309,33 @@ const HomePage = () => {
           <div className="row ftco-animate">
             <div className="col-md-12">
               <div className="carousel-testimony owl-carousel ftco-owl">
-                <div className="item">
-                  <div className="testimony-wrap rounded text-center py-4 pb-5">
-                    <div className="user-img mb-2" style={{ backgroundImage: "url('/images/ritcologo2.jpeg')" }} />
+                {expresses.map((express) => (
+                  <div className="item" key={express.id}>
+                    <div className="testimony-wrap text-center py-4 pb-5">
+                      <div
+                        className="user-img mb-2"
+                        style={{
+                          backgroundImage: `url(http://localhost:5000/uploads/${express.expressLogo || 'default.jpg'})`,
+                          height: '80px',
+                          width: '80px',
+                          borderRadius: '50%',
+                          margin: '0 auto',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center'
+                        }}
+                      ></div>
+                      <div className="text">
+                        <p className="name">{express.expressName || 'N/A'}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="item">
-                  <div className="testimony-wrap rounded text-center py-4 pb-5">
-                    <div className="user-img mb-2" style={{ backgroundImage: "url('/images/royalexpress.jpg')" }} />
-                  </div>
-                </div>
-                <div className="item">
-                  <div className="testimony-wrap rounded text-center py-4 pb-5">
-                    <div className="user-img mb-2" style={{ backgroundImage: "url('/images/virungal.jpg')" }} />
-                  </div>
-                </div>
-                <div className="item">
-                  <div className="testimony-wrap rounded text-center py-4 pb-5">
-                    <div className="user-img mb-2" style={{ backgroundImage: "url('/images/horizon.png')" }} />
-                  </div>
-                </div>
-                <div className="item">
-                  <div className="testimony-wrap rounded text-center py-4 pb-5">
-                    <div className="user-img mb-2" style={{ backgroundImage: "url('/images/volcano.png')" }} />
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
- 
+
       <section className="ftco-counter ftco-section img bg-light" id="section-counter">
         <div className="overlay" />
         <div className="container">
@@ -287,7 +343,9 @@ const HomePage = () => {
             <div className="col-md-6 col-lg-4 justify-content-center counter-wrap ftco-animate">
               <div className="block-18">
                 <div className="text text-border d-flex align-items-center">
-                  <strong className="number" data-number="10">0</strong>
+                  <strong className="number" data-number={expresses.length}>
+                    0
+                  </strong>
                   <span>Express</span>
                 </div>
               </div>
@@ -295,16 +353,24 @@ const HomePage = () => {
             <div className="col-md-6 col-lg-4 justify-content-center counter-wrap ftco-animate">
               <div className="block-18">
                 <div className="text text-border d-flex align-items-center">
-                  <strong className="number" data-number="30">0</strong>
-                  <span>Total <br />Route</span>
+                  <strong className="number" data-number={destinations.length}>
+                    0
+                  </strong>
+                  <span>
+                    Total <br /> Route
+                  </span>
                 </div>
               </div>
             </div>
             <div className="col-md-6 col-lg-4 justify-content-center counter-wrap ftco-animate">
               <div className="block-18">
                 <div className="text text-border d-flex align-items-center">
-                  <strong className="number" data-number="1000">0</strong>
-                  <span>Booking <br />Times</span>
+                  <strong className="number" data-number={tickets.length}>
+                    0
+                  </strong>
+                  <span>
+                    Booking <br /> Times
+                  </span>
                 </div>
               </div>
             </div>
@@ -326,4 +392,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default HomePage; 

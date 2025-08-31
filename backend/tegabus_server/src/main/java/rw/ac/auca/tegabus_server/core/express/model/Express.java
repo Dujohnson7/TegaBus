@@ -20,6 +20,6 @@ public class Express extends AbstractBaseEntity {
     @Column(name = "express_name", nullable = false, unique = true)
     private String expressName;
 
-    @Column(name = "express_description", nullable = false)
+    @Column(name = "express_description", nullable = false, columnDefinition = "TEXT")
     private String expressDescription;
 }

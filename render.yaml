@@ -1,0 +1,39 @@
+services:
+  # Combined TegaBus Application
+  - type: web
+    name: tegabus-app
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    repo: https://github.com/dujohnson7/TegaBus.git
+    branch: main
+    envVars:
+      - key: PORT
+        value: 80
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: tegabus-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: tegabus-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: tegabus-db
+          property: password
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        value: "*"
+
+databases:
+  # PostgreSQL Database
+  - name: tegabus-db
+    databaseName: tegabus_db
+    user: dujohnson7
+    plan: starter

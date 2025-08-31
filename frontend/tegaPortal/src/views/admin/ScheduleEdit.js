@@ -3,7 +3,7 @@ import { useHistory, useParams } from "react-router-dom";
 
 export default function ScheduleEdit() {
   const history = useHistory();
-  const { id } = useParams(); // Get schedule ID from URL
+  const { id } = useParams();  
 
   const [scheduleData, setScheduleData] = useState({
     express: "",
@@ -25,8 +25,7 @@ export default function ScheduleEdit() {
       try {
         const token = localStorage.getItem("token");
         const expressId = localStorage.getItem("expressId");
-
-        // Get user role
+ 
         let userRole = "";
         const userObj = localStorage.getItem("user");
         if (userObj) {
@@ -36,32 +35,28 @@ export default function ScheduleEdit() {
           userRole = localStorage.getItem("role") ? localStorage.getItem("role").toUpperCase() : "";
         }
         setRole(userRole);
-
-        // Fetch express list
+ 
         const expressResponse = await fetch("http://localhost:5000/api/express/all", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
         const expresses = await expressResponse.json();
         setExpressList(expresses);
-
-        // Fetch bus list
+ 
         const busResponse = await fetch("http://localhost:5000/api/buses/all", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
         const buses = await busResponse.json();
         setBusList(buses);
-
-        // Fetch destination list
+ 
         const destinationResponse = await fetch("http://localhost:5000/api/destinations/all", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
         const destinations = await destinationResponse.json();
         setDestinationList(destinations);
-
-        // Fetch schedule to edit
+ 
         const scheduleResponse = await fetch(`http://localhost:5000/api/schedules/${id}`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
@@ -76,8 +71,7 @@ export default function ScheduleEdit() {
           time: schedule.time || "",
           date: schedule.date || "",
         });
-
-        // If not SUPER_ADMIN, set express automatically
+ 
         if (userRole !== "SUPER_ADMIN") {
           setScheduleData((prev) => ({ ...prev, express: expressId }));
         }

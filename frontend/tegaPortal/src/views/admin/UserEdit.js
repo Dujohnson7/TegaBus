@@ -19,8 +19,7 @@ export default function UserEdit() {
 
   const [expressList, setExpressList] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Fetch express list
+ 
   useEffect(() => {
     const fetchExpresses = async () => {
       try {
@@ -37,8 +36,7 @@ export default function UserEdit() {
     };
     fetchExpresses();
   }, []);
-
-  // Fetch user data by id
+ 
   useEffect(() => {
     const fetchUser = async () => {
       try {

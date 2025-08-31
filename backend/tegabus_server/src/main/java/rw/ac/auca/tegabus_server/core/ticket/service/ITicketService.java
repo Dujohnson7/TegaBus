@@ -12,8 +12,12 @@ public interface ITicketService {
     Ticket deleteTicket(Ticket theTicket);
     Ticket findTicketByIdAndState(UUID id, Boolean state);
     List<Ticket> findAllTicketsByExpressIdAndState(UUID expressId, Boolean state);
-    List<Ticket> findAllTicketsByDateBetween(Date start, Date end);
-    List<Ticket> findAllTicketsByExpressIdAndDateBetween(UUID expressId, Date start, Date end);
+    List<Ticket> findAllTicketsByDateBetweenAndState(Date start, Date end, Boolean state);
+    List<Ticket> findAllTicketsByExpressIdAndDateBetweenAndState(UUID expressId, Date start, Date end, Boolean state);
     List<Ticket> findAllByState(Boolean state);
 
+
+    List<Ticket> findAllTicketsByDestinationAndDateBetween(String destination, Date start, Date end);
+    List<String> findAllDestinations();
+    List<Ticket> findAllByExpressIdAndAState(UUID expressId, Boolean active);
 }

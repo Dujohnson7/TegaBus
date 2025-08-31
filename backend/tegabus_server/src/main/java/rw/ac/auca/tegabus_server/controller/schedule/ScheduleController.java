@@ -29,10 +29,14 @@ public class ScheduleController {
         if (principal instanceof UserDetailsImpl userDetails) {
             boolean isSuperAdmin = authentication.getAuthorities().stream()
                     .anyMatch(auth -> auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
+            boolean isDriver = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_DRIVER"));
 
             List<Schedule> schedules;
             if (isSuperAdmin) {
                 schedules = scheduleService.findAllByState(Boolean.TRUE);
+            } else if (isDriver) {
+                schedules = scheduleService.findSchedulesByExpress_IdAndDriver_IdAndState(userDetails.getExpressId(), userDetails.getUserId(), Boolean.TRUE);
             } else {
                 schedules = scheduleService.findAllSchedulesByExpress_IdAndState(userDetails.getExpressId(), Boolean.TRUE);
             }

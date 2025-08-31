@@ -26,6 +26,7 @@ import UserEdit from "views/admin/UserEdit.js";
 import DestinationEdit from "views/admin/DestinationEdit.js";
 import BusEdit  from "views/admin/BusEdit.js";
 import ScheduleEdit  from "views/admin/ScheduleEdit.js";
+import TicketEdit from "views/admin/TicketEdit.js";
 
 
 function PrivateRoute({ component: Component, ...rest }) {
@@ -77,8 +78,7 @@ export default function Admin() {
         <div className="px-4 md:px-10 mx-auto w-full -mt-24">
           <Switch>
             <PrivateRoute path="/admin" exact component={Dashboard} /> 
-            <PrivateRoute path="/admin/settings" exact component={Settings} />
-            {/* <PrivateRoute path="/admin/tables" exact component={Tables} /> */}
+            <PrivateRoute path="/admin/settings" exact component={Settings} /> 
             <PrivateRoute path="/admin/express" exact component={Express} />
             <PrivateRoute path="/admin/users" exact component={Users} />
             <PrivateRoute path="/admin/buses" exact component={Buses} />
@@ -97,6 +97,7 @@ export default function Admin() {
             <PrivateRoute path="/admin/destinations/edit/:id" component={DestinationEdit} />
             <PrivateRoute path="/admin/buses/edit/:id" component={BusEdit} />
             <PrivateRoute path="/admin/schedules/edit/:id" component={ScheduleEdit} />
+            <PrivateRoute path="/admin/tickets/edit/:id" component={TicketEdit} />
 
             <Redirect from="/" to="/admin" />
           </Switch>

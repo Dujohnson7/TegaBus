@@ -35,36 +35,31 @@ export default function ScheduleAdd() {
           userRole = localStorage.getItem("role") ? localStorage.getItem("role").toUpperCase() : "";
         }
         setRole(userRole);
-
-        // Fetch express list
+ 
         const expressResponse = await fetch("http://localhost:5000/api/express/all", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
         setExpressList(await expressResponse.json());
-
-        // Fetch bus list
+ 
         const busResponse = await fetch("http://localhost:5000/api/buses/all", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
         setBusList(await busResponse.json());
-
-        // Fetch destination list
+ 
         const destinationResponse = await fetch("http://localhost:5000/api/destinations/all", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
         setDestinationList(await destinationResponse.json());
-
-        // Fetch existing schedules for validation
+ 
         const schedulesResponse = await fetch("http://localhost:5000/api/schedules/all", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}`, "X-Express-Id": expressId || "" },
         });
         setExistingSchedules(await schedulesResponse.json());
-
-        // If not SUPER_ADMIN, set express automatically
+ 
         if (userRole !== "SUPER_ADMIN") {
           setScheduleData((prev) => ({ ...prev, express: expressId }));
         }
@@ -85,9 +80,7 @@ export default function ScheduleAdd() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validation: check if express already has schedule at same time
+    e.preventDefault(); 
     const conflict = existingSchedules.find(
       (sch) =>
         sch.express.id === scheduleData.express &&
@@ -241,7 +234,7 @@ export default function ScheduleAdd() {
                 className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancel
-              </button>
+              </button> &nbsp; &nbsp; &nbsp;
               <button
                 type="submit"
                 className="px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-700"

@@ -12,4 +12,6 @@ public interface IScheduleService {
     Schedule findScheduleByIdAndState(UUID id, Boolean state);
     List<Schedule> findAllSchedulesByExpress_IdAndState(UUID expressId, Boolean state);
     List<Schedule> findAllByState(Boolean state);
+    List<Schedule> findSchedulesByExpress_IdAndDriver_IdAndState(UUID expressId, UUID driverId, Boolean state);
+    List<Schedule> findAllByCurrentDateAndAvailableSeats();
 }

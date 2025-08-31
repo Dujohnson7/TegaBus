@@ -110,4 +110,6 @@ public class DestinationController {
             return ResponseEntity.badRequest().body(" Error Destination " + ex.getMessage());
         }
     }
+
+
 }

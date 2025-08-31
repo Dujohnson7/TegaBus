@@ -15,7 +15,7 @@ function App() {
         <Route path="/booking" element={<BookingPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/express" element={<ExpressPage />} />
-        <Route path="/express-single" element={<ExpressSinglePage />} />
+        <Route path="/express/:id" element={<ExpressSinglePage />} />
       </Routes>
     </Router>
   );

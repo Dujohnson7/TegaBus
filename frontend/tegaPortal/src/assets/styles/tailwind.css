@@ -1089,7 +1089,10 @@ select {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
 }
-
+.bg-green-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgba(34, 197, 94, var(--tw-bg-opacity));  
+}
 .bg-pink-500 {
   --tw-bg-opacity: 1;
   background-color: rgba(236, 72, 153, var(--tw-bg-opacity));
@@ -2342,6 +2345,21 @@ select {
 .text-black {
   --tw-text-opacity: 1;
   color: rgba(0, 0, 0, var(--tw-text-opacity));
+}
+
+.text-green {
+  --tw-text-opacity: 1;
+  color: rgba(34, 197, 94, var(--tw-text-opacity));  
+}
+ 
+.text-light-green {
+  --tw-text-opacity: 1;
+  color: rgba(134, 239, 172, var(--tw-text-opacity));
+}
+ 
+.text-dark-green {
+  --tw-text-opacity: 1;
+  color: rgba(21, 128, 61, var(--tw-text-opacity));
 }
 
 .text-white {

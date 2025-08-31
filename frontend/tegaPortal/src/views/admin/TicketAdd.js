@@ -1,36 +1,45 @@
 import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import autoTable from "jspdf-autotable";
+import QRCode from "qrcode";
+ 
+const generateTicketNumber = () => {
+  const timestamp = Date.now().toString(36);
+  const randomStr = Math.random().toString(36).substr(2, 5);
+  return `TKT-${timestamp}-${randomStr}`.toUpperCase();
+};
 
 export default function TicketAdd() {
   const history = useHistory();
 
   const [ticketData, setTicketData] = useState({
+    ticketNumber: generateTicketNumber(), 
     names: "",
-    email: "",
     phone: "",
     express: "",
     schedule: "",
-    payState: "PENDING",
-    date: "",
+    busPlateNo: "",
     seatNo: "",
+    totalAmount: 0,
+    payState: "PAID", 
   });
 
   const [expressList, setExpressList] = useState([]);
   const [scheduleList, setScheduleList] = useState([]);
-  const [existingTickets, setExistingTickets] = useState([]);
+  const [busList, setBusList] = useState([]);
   const [role, setRole] = useState("");
+  const [existingTickets, setExistingTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [availableSeats, setAvailableSeats] = useState([]);
+  const [availableSeats, setAvailableSeats] = useState(0);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
         const expressId = localStorage.getItem("expressId");
-
-        // Role
+ 
         let userRole = "";
         const userObj = localStorage.getItem("user");
         if (userObj) {
@@ -40,41 +49,122 @@ export default function TicketAdd() {
           userRole = localStorage.getItem("role") ? localStorage.getItem("role").toUpperCase() : "";
         }
         setRole(userRole);
-
-        // Fetch express list
+ 
         const expressResponse = await fetch("http://localhost:5000/api/express/all", {
           method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
         });
-        if (!expressResponse.ok) throw new Error("Cannot fetch express list");
-        setExpressList(await expressResponse.json());
 
-        // Fetch schedules
-        const scheduleResponse = await fetch("http://localhost:5000/api/schedules/all", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}`, "X-Express-Id": expressId || "" },
+        if (!expressResponse.ok) {
+          if (expressResponse.status === 403) {
+            throw new Error("Access forbidden. Please check your authentication.");
+          }
+          throw new Error("Cannot fetch express list");
+        }
+
+        const expresses = await expressResponse.json();
+        setExpressList(expresses);
+ 
+        let schedules = [];
+        let scheduleResponse;
+
+        try {
+          scheduleResponse = await fetch("http://localhost:5000/api/tickets/schedule", {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "X-Express-Id": expressId || ""
+            },
+          });
+
+          if (!scheduleResponse.ok) {
+            scheduleResponse = await fetch("http://localhost:5000/api/tickets/schedule", {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+                "X-Express-Id": expressId || ""
+              },
+            });
+          }
+
+          if (!scheduleResponse.ok) {
+            if (scheduleResponse.status === 403) {
+              throw new Error("Access forbidden to schedules. Check your permissions.");
+            }
+            throw new Error("Cannot fetch schedule list");
+          }
+
+          schedules = await scheduleResponse.json();
+        } catch (scheduleError) {
+          console.error("Schedule fetch error:", scheduleError);
+          schedules = [];
+        }
+
+        const today = new Date();
+        const filteredSchedules = schedules.filter((sch) => {
+          if (!sch || !sch.date || !sch.time) return false;
+           
+          const scheduleDateTime = new Date(`${sch.date}T${sch.time}`);
+          
+          const isNotExpired = scheduleDateTime >= today;
+          const matchesExpress = userRole === "SUPER_ADMIN" ? true : (sch.express && sch.express.id === expressId);
+          return isNotExpired && matchesExpress && sch.express;
         });
-        if (!scheduleResponse.ok) throw new Error("Cannot fetch schedule list");
-        setScheduleList(await scheduleResponse.json());
 
-        // Fetch existing tickets
-        const ticketsResponse = await fetch("http://localhost:5000/api/tickets/all", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!ticketsResponse.ok) throw new Error("Cannot fetch tickets");
-        setExistingTickets(await ticketsResponse.json());
+        const finalSchedules = userRole !== "SUPER_ADMIN" && expressId
+          ? filteredSchedules.filter((sch) => sch.express && sch.express.id === expressId)
+          : filteredSchedules;
 
-        // Set default express for non-admin
-        if (userRole !== "SUPER_ADMIN") {
-          setTicketData(prev => ({ ...prev, express: expressId }));
+        setScheduleList(finalSchedules);
+ 
+        try {
+          const busResponse = await fetch("http://localhost:5000/api/tickets/bus", {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "X-Express-Id": expressId || ""
+            },
+          });
+
+          if (busResponse.ok) {
+            setBusList(await busResponse.json());
+          }
+        } catch (busError) {
+          console.error("Bus fetch error:", busError);
+        }
+ 
+        try {
+          const ticketsResponse = await fetch("http://localhost:5000/api/tickets/all", {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+          });
+
+          if (ticketsResponse.ok) {
+            setExistingTickets(await ticketsResponse.json());
+          }
+        } catch (ticketError) {
+          console.error("Tickets fetch error:", ticketError);
+        }
+
+        if (userRole !== "SUPER_ADMIN" && expressId) {
+          setTicketData((prev) => ({ ...prev, express: expressId }));
         }
 
         setLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError(error.message);
         setLoading(false);
-        alert(error.message);
+        alert("Error: " + error.message);
       }
     };
 
@@ -84,164 +174,494 @@ export default function TicketAdd() {
   useEffect(() => {
     if (!ticketData.schedule) return;
 
-    const selectedSchedule = scheduleList.find(s => s.id === ticketData.schedule);
-    if (!selectedSchedule) return;
+    const selectedSchedule = scheduleList.find((s) => s.id === ticketData.schedule);
+    if (!selectedSchedule || !selectedSchedule.bus) return;
 
-    // Find already booked seats
     const bookedSeats = existingTickets
-      .filter(t => t.schedule?.some(sch => sch.id === ticketData.schedule))
-      .map(t => t.seatNo);
+      .filter((t) => t.schedule && t.schedule.id === ticketData.schedule)
+      .map((t) => t.seatNo);
 
-    const busCapacity = selectedSchedule.bus?.capacity || 0;
-    const remainingSeats = [];
-    for (let i = 1; i <= busCapacity; i++) {
-      if (!bookedSeats.includes(i)) remainingSeats.push(i);
-    }
-
+    const remainingSeats = (( selectedSchedule.bus.busSize) -1) - bookedSeats.length;
     setAvailableSeats(remainingSeats);
-    setTicketData(prev => ({
+
+    const nextSeat = [];
+    for (let i = 1; i <= selectedSchedule.bus.busSize; i++) {
+      if (!bookedSeats.includes(i)) {
+        nextSeat.push(i);
+      }
+    }
+    setTicketData((prev) => ({
       ...prev,
-      seatNo: remainingSeats.length > 0 ? remainingSeats[0] : "",
+      seatNo: nextSeat.length > 0 ? nextSeat[0] : "",
+      busPlateNo: selectedSchedule.bus.plateNo,
+      totalAmount: selectedSchedule.destination.cost || 0,
     }));
   }, [ticketData.schedule, scheduleList, existingTickets]);
 
-  const handleInputChange = e => {
-    const { name, value } = e.target;
-    setTicketData(prev => ({ ...prev, [name]: value }));
+  useEffect(() => {
+    if (role !== "SUPER_ADMIN" || !ticketData.express) return;
+
+    const fetchSchedulesForExpress = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        let scheduleResponse = await fetch("http://localhost:5000/api/tickets/schedule", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "X-Express-Id": ticketData.express
+          },
+        });
+
+        if (!scheduleResponse.ok) {
+          scheduleResponse = await fetch("http://localhost:5000/api/tickets/schedule", {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "X-Express-Id": ticketData.express
+            },
+          });
+        }
+
+        if (!scheduleResponse.ok) throw new Error("Cannot fetch schedules for express");
+
+        const schedules = await scheduleResponse.json();
+
+        const today = new Date();
+        const filteredSchedules = schedules.filter((sch) => {
+          if (!sch || !sch.date) return false;
+
+          const scheduleDate = new Date(sch.date);
+          return scheduleDate >= today && sch.express && sch.express.id === ticketData.express && sch.express;
+        });
+
+        setScheduleList(filteredSchedules);
+      } catch (error) {
+        console.error("Error fetching schedules:", error);
+        setError(error.message);
+      }
+    };
+
+    fetchSchedulesForExpress();
+  }, [ticketData.express, role]);
+
+  const generateQRCodeData = (ticket, selectedSchedule, selectedExpress) => {
+    const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   };
 
-  const generatePDF = (ticket) => {
-    const doc = new jsPDF();
-    let y = 20;
-    doc.setFontSize(16);
-    doc.text("Bus Ticket", 105, y, null, null, "center");
-    y += 10;
-    doc.setFontSize(12);
-    doc.text(`Name: ${ticket.names}`, 20, y);
-    y += 8;
-    doc.text(`Phone: ${ticket.phone}`, 20, y);
-    y += 8;
-    doc.text(`Email: ${ticket.email}`, 20, y);
-    y += 8;
-    doc.text(`Express: ${ticket.express.expressName}`, 20, y);
-    y += 8;
-    doc.text(`Schedule: ${ticket.schedule.map(s => s.fromLocation + " - " + s.toLocation).join(", ")}`, 20, y);
-    y += 8;
-    doc.text(`Date: ${new Date(ticket.date).toLocaleDateString()}`, 20, y);
-    y += 8;
-    doc.text(`Bus Plate: ${ticket.busPlateNo}`, 20, y);
-    y += 8;
-    doc.text(`Seat Number: ${ticket.seatNo}`, 20, y);
-    y += 8;
-    doc.text(`Ticket Number: ${ticket.tickeNumber}`, 20, y);
+    const qrData = `
+      Ticket: ${ticket.ticketNumber}
+      Express: ${selectedExpress.expressName}
+      Route: ${selectedSchedule.destination.fromLocation} - ${selectedSchedule.destination.toLocation}
+      Time: ${selectedSchedule.time}
+      Date: ${formatDate(ticket.date)}
+      Bus: ${ticket.busPlateNo}
+      Seat: ${ticket.seatNo}
+      Passenger: ${ticket.names}
+      Amount: ${ticket.totalAmount} Rwf
+      Status: ${ticket.payState}
 
-    doc.save(`ticket-${ticket.tickeNumber}.pdf`);
+      Powered By TEGABUS
+    `.trim();
+
+    return qrData;
   };
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    if (!ticketData.seatNo) return alert("No seats available.");
-
+  const generateQRCodeImage = async (qrCodeData) => {
     try {
-      const token = localStorage.getItem("token");
-      const payload = {
-        ...ticketData,
-        express: role === "SUPER_ADMIN"
-          ? expressList.find(exp => exp.id === ticketData.express)
-          : { id: ticketData.express },
-        schedule: [{ id: ticketData.schedule }],
-      };
-
-      const response = await fetch("http://localhost:5000/api/tickets/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
+      const qrCodeDataURL = await QRCode.toDataURL(qrCodeData, {
+        width: 120,
+        margin: 1,
+        color: {
+          dark: '#2c3e50',
+          light: '#ffffff'
+        }
       });
-
-      if (!response.ok) throw new Error(await response.text());
-
-      const savedTicket = await response.json();
-      alert("Ticket added successfully!");
-      generatePDF(savedTicket);
-      history.push("/admin/tickets");
+      return qrCodeDataURL;
     } catch (error) {
-      console.error(error);
-      alert("Error saving ticket: " + error.message);
+      console.error("Error generating QR code:", error);
+      throw error;
     }
   };
+
+  const generatePDF = async (ticket) => {
+    const selectedSchedule = scheduleList.find((s) => s.id === ticket.schedule.id);
+    const selectedExpress = expressList.find((e) => e.id === ticket.express.id);
+
+    if (!selectedSchedule || !selectedExpress) {
+      console.error("Missing schedule or express data:", { selectedSchedule, selectedExpress });
+      alert("Cannot generate PDF: Missing schedule or express data.");
+      return;
+    }
+
+    const logoUrl = `http://localhost:5000/uploads/${selectedExpress.expressLogo}`;
+    const doc = new jsPDF();
+
+    const qrCodeData = generateQRCodeData(ticket, selectedSchedule, selectedExpress);
+
+    doc.setFillColor(74, 107, 136);
+    doc.rect(0, 0, 210, 25, 'F');
+
+    doc.setFontSize(20);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text(`${selectedExpress.expressName || "N/A"}`, 105, 12, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Premium Travel Experience", 105, 18, { align: "center" });
+
+    doc.setDrawColor(200, 200, 200);
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(10, 30, 190, 130, 8, 8, 'FD');
+
+    doc.setDrawColor(74, 107, 136);
+    doc.setLineWidth(1);
+    doc.roundedRect(12, 32, 186, 126, 6, 6, 'S');
+
+    doc.setFillColor(74, 107, 136);
+    doc.roundedRect(15, 35, 180, 15, 4, 4, 'F');
+
+    doc.setFontSize(16);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.text("ELECTRONIC TICKET", 105, 45, { align: "center" });
+
+    doc.setFillColor(240, 240, 240);
+    doc.roundedRect(70, 55, 70, 8, 4, 4, 'F');
+
+    doc.setFontSize(10);
+    doc.setTextColor(74, 107, 136);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Ticket #: ${ticket.ticketNumber || "N/A"}`, 105, 60, { align: "center" });
+
+    try {
+      const qrCodeDataURL = await generateQRCodeImage(qrCodeData);
+
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(135, 70, 60, 80, 5, 5, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.roundedRect(135, 70, 60, 80, 5, 5, 'S');
+
+      doc.addImage(qrCodeDataURL, 'PNG', 140, 75, 50, 50);
+
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text("Scan Me", 165, 130, { align: "center" });
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      doc.setFontSize(8);
+      doc.setTextColor(0, 0, 0);
+      doc.text("QR Code Error", 160, 85, { align: "center" });
+    }
+
+    doc.setFontSize(12);
+    doc.setTextColor(74, 107, 136);
+    doc.setFont(undefined, 'bold');
+    doc.text("PASSENGER DETAILS", 65, 75);
+
+    doc.setDrawColor(74, 107, 136);
+    doc.setLineWidth(0.5);
+    doc.line(20, 78, 130, 78);
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Name: ${ticket.names || "-"}`, 20, 85);
+    doc.text(`Phone: ${ticket.phone || "-"}`, 20, 92);
+
+    doc.setFontSize(12);
+    doc.setTextColor(74, 107, 136);
+    doc.setFont(undefined, 'bold');
+    doc.text("JOURNEY INFORMATION", 65, 110);
+
+    doc.line(20, 113, 130, 113);
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Route: ${selectedSchedule.destination.fromLocation} - ${selectedSchedule.destination.toLocation}`, 20, 120);
+
+    doc.text(`Time: ${selectedSchedule.time || "-"}`, 20, 127);
+    doc.text(`Date: ${selectedSchedule.date ? new Date(selectedSchedule.date).toLocaleDateString() : "-"}`, 20, 134);
+
+    doc.text(`Bus: ${ticket.busPlateNo || "-"}`, 20, 141);
+    doc.text(`Seat: ${ticket.seatNo || "-"}`, 80, 141);
+
+    if (ticket.payState === "PAID") {
+      doc.setFillColor(76, 175, 80);
+    } else {
+      doc.setFillColor(244, 67, 54);
+    }
+    doc.roundedRect(20, 148, 50, 8, 4, 4, 'F');
+
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text(`Status: ${ticket.payState || "PENDING"}`, 45, 153, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Price: ${ticket.totalAmount || 0} Rwf`, 100, 153);
+
+    doc.setFillColor(74, 107, 136);
+    doc.rect(0, 165, 210, 15, 'F');
+
+    doc.setFontSize(11);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Powered By TEGABUS", 105, 172, { align: "center" });
+
+    doc.setFillColor(44, 62, 80);
+    for (let i = 0; i < 210; i += 10) {
+      doc.circle(i, 180, 1, 'F');
+    }
+
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Please present this ticket during boarding • Please come early if you delay Ticket will be Expired • Thank you for traveling with us!", 105, 185, { align: "center" });
+
+    doc.text("Generated on " + new Date().toLocaleString(), 105, 190, { align: "center" });
+
+    try {
+      doc.addImage(logoUrl, "PNG", 175, 3, 25, 20, undefined, 'FAST');
+    } catch (error) {
+      console.error("Error adding logo to PDF:", error);
+    }
+
+    doc.save(`ticket_${ticket.ticketNumber || "unknown"}.pdf`);
+
+    const pdfOutput = doc.output("bloburl");
+    const printWindow = window.open(pdfOutput);
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.print();
+        setTimeout(() => {
+          printWindow.close();
+        }, 500);
+      };
+    } else {
+      console.error("Failed to open print window. Ensure pop-ups are allowed.");
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setTicketData({ ...ticketData, [name]: value });
+  };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!ticketData.seatNo) {
+    return alert("No seats available for the selected schedule.");
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+
+    const payload = {
+      ticketNumber: ticketData.ticketNumber,
+      names: ticketData.names,
+      phone: ticketData.phone,
+      express: { id: ticketData.express },
+      schedule: { id: ticketData.schedule },
+      busPlateNo: ticketData.busPlateNo,
+      seatNo: parseInt(ticketData.seatNo),
+      totalAmount: parseFloat(ticketData.totalAmount),
+      payState: ticketData.payState,
+    };
+
+    console.log("Payload sent to backend:", payload);
+
+    const response = await fetch("http://localhost:5000/api/tickets/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to save ticket");
+    }
+
+    const savedTicket = await response.json();
+    alert("Ticket added successfully!");
+ 
+    if (savedTicket.payState !== "PENDING") {
+      await generatePDF(savedTicket);
+    }
+
+    history.push("/admin/tickets");
+  } catch (error) {
+    console.error(error);
+    alert("Error saving ticket: " + error.message);
+  }
+};
 
   const handleCancel = () => history.push("/admin/tickets");
 
   if (loading) return <p className="text-center p-6">Loading...</p>;
 
   return (
-    <div className="flex justify-center mt-6">
-      <div className="w-full max-w-4xl bg-white shadow-lg rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Add New Ticket</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label>Passenger Name *</label>
-              <input type="text" name="names" value={ticketData.names} onChange={handleInputChange} required className="w-full border px-3 py-2 rounded" />
-            </div>
-            <div>
-              <label>Email</label>
-              <input type="email" name="email" value={ticketData.email} onChange={handleInputChange} className="w-full border px-3 py-2 rounded" />
-            </div>
-            <div>
-              <label>Phone *</label>
-              <input type="text" name="phone" value={ticketData.phone} onChange={handleInputChange} required className="w-full border px-3 py-2 rounded" />
-            </div>
+    <div className="flex flex-wrap">
+      <div className="w-full xl:w-8/12 mb-12 xl:mb-0 px-4 mx-auto">
+        <div className="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded-lg bg-white border-0">
+          <div className="rounded-t bg-white mb-0 px-6 py-6 flex justify-between items-center">
+            <h6 className="text-blueGray-700 text-xl font-bold">Add New Ticket</h6>
+            <button
+              onClick={handleCancel}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            >
+              Back
+            </button>
+          </div>
 
-            {role === "SUPER_ADMIN" && (
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mx-6 mt-4">
+              <strong className="font-bold">Error: </strong>
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="flex-auto px-4 lg:px-10 py-10 pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label>Express *</label>
-                <select name="express" value={ticketData.express} onChange={handleInputChange} required className="w-full border px-3 py-2 rounded">
-                  <option value="">Select Express</option>
-                  {expressList.map(exp => (
-                    <option key={exp.id} value={exp.id}>{exp.expressName}</option>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Passenger Name *</label>
+                <input
+                  type="text"
+                  name="names"
+                  value={ticketData.names}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                />
+              </div>
+
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
+                <input
+                  type="text"
+                  name="phone"
+                  value={ticketData.phone}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                />
+              </div>
+
+              {role === "SUPER_ADMIN" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Express *</label>
+                  <select
+                    name="express"
+                    value={ticketData.express}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                  >
+                    <option value="">Select Express</option>
+                    {expressList.map((exp) => (
+                      <option key={exp.id} value={exp.id}>{exp.expressName}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Schedule *</label>
+                <select
+                  name="schedule"
+                  value={ticketData.schedule}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                >
+                  <option value="">Select Schedule</option>
+                  {scheduleList.map((sch) => (
+                    <option key={sch.id} value={sch.id}>
+                      {sch.destination.fromLocation} - {sch.destination.toLocation} ({sch.date} {sch.time})
+                    </option>
                   ))}
                 </select>
               </div>
-            )}
 
-            <div>
-              <label>Schedule *</label>
-              <select name="schedule" value={ticketData.schedule} onChange={handleInputChange} required className="w-full border px-3 py-2 rounded">
-                <option value="">Select Schedule</option>
-                {scheduleList.map(sch => (
-                  <option key={sch.id} value={sch.id}>
-                    {sch.destination.fromLocation} - {sch.destination.toLocation} ({sch.date} {sch.time})
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bus Plate Number *</label>
+                <input
+                  type="text"
+                  name="busPlateNo"
+                  value={ticketData.busPlateNo}
+                  readOnly
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Seat Number * (Available: {availableSeats})
+                </label>
+                <input
+                  type="number"
+                  name="seatNo"
+                  value={ticketData.seatNo || ""}
+                  readOnly
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cost *</label>
+                <input
+                  type="number"
+                  name="totalAmount"
+                  value={ticketData.totalAmount}
+                  readOnly
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status *</label>
+                <select
+                  name="payState"
+                  value={ticketData.payState}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="PAID">Paid</option>
+                </select>
+              </div>
+ 
             </div>
 
-            <div>
-              <label>Seat Number * (Available: {availableSeats.length})</label>
-              <input type="number" name="seatNo" value={ticketData.seatNo || ""} readOnly className="w-full border px-3 py-2 rounded bg-gray-100" />
+            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>&nbsp; &nbsp; &nbsp;
+              <button
+                type="submit"
+                className="px-6 py-3 bg-black text-white rounded-lg hover:bg-black-700 transition-colors"
+                disabled={availableSeats === 0}
+              >
+                <i className="fas fa-ticket-alt mr-2"></i> Save
+              </button>
             </div>
-
-            <div>
-              <label>Payment Status *</label>
-              <select name="payState" value={ticketData.payState} onChange={handleInputChange} required className="w-full border px-3 py-2 rounded">
-                <option value="PENDING">Pending</option>
-                <option value="PAID">Paid</option>
-              </select>
-            </div>
-
-            <div>
-              <label>Date *</label>
-              <input type="date" name="date" value={ticketData.date} onChange={handleInputChange} required className="w-full border px-3 py-2 rounded" />
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <button type="button" onClick={handleCancel} className="px-4 py-2 border rounded">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-black text-white rounded" disabled={availableSeats.length === 0}>Save Ticket</button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
-}
+} 

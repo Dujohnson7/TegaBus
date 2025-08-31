@@ -35,9 +35,15 @@ public class TicketController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Object principal = authentication.getPrincipal();
 
+        System.out.println("Principal: " + principal);
+        System.out.println("Authorities: " + authentication.getAuthorities());
+
         if (principal instanceof UserDetailsImpl userDetails) {
+            System.out.println("User Express ID: " + userDetails.getExpressId());
             boolean isSuperAdmin = authentication.getAuthorities().stream()
                     .anyMatch(auth -> auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+            System.out.println("Is Super Admin: " + isSuperAdmin);
 
             List<Ticket> tickets;
             if (isSuperAdmin) {

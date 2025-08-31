@@ -17,7 +17,7 @@ import java.util.List;
 public class Ticket extends AbstractBaseEntity {
 
     @Column(name = "ticket_number",unique = true, nullable = false,updatable = false)
-    private int tickeNumber;
+    private String ticketNumber;
 
     @Column(name = "names", nullable = false)
     private String names;

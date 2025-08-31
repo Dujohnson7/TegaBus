@@ -1,7 +1,7 @@
 /*eslint-disable*/
 import React from "react";
 import { Link } from "react-router-dom";
- 
+
 export default function Navbar(props) {
   const [navbarOpen, setNavbarOpen] = React.useState(false);
   return (
@@ -13,8 +13,8 @@ export default function Navbar(props) {
               className="text-white text-sm font-bold leading-relaxed inline-block mr-4 py-2 whitespace-nowrap uppercase"
               to="/"
             >
-             TEGABUS
-            </Link> 
+              TEGA<span className="text-light-green">Bus</span>
+            </Link>
           </div>
           <div
             className={
@@ -22,7 +22,7 @@ export default function Navbar(props) {
               (navbarOpen ? " block rounded shadow-lg" : " hidden")
             }
             id="example-navbar-warning"
-          >  
+          >
           </div>
         </div>
       </nav>

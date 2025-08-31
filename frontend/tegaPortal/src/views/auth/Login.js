@@ -20,14 +20,12 @@ export default function Login() {
       }
 
       const data = await response.json();
-      
-      // Store token, user, userId, and expressId
+       
       localStorage.setItem("token", data.token);  
       localStorage.setItem("user", JSON.stringify(data));
-      localStorage.setItem("userId", data.id);  // <--- Added this
+      localStorage.setItem("userId", data.id);   
       localStorage.setItem("expressId", data.express_id);
-
-      alert("Login successful!");
+ 
       history.push("/admin");
     } catch (error) {
       alert(error.message);

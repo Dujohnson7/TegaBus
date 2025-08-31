@@ -10,8 +10,7 @@ export default function ExpressEdit() {
     expressLogo: null,
     expressProfile: null,
   });
-
-  // Fetch existing express data
+ 
   useEffect(() => {
     if (expressId) {
       fetch(`http://localhost:5000/api/express/${expressId}`)

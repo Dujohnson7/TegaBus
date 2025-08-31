@@ -13,9 +13,8 @@ export default function AccountSettings() {
 
   const [expressList, setExpressList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null); // store logged-in user
-
-  // Fetch express list for dropdown (only if super_admin)
+  const [user, setUser] = useState(null);
+  
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -40,8 +39,7 @@ export default function AccountSettings() {
       }
     }
   }, []);
-
-  // Fetch current logged-in user data
+ 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -79,8 +77,7 @@ export default function AccountSettings() {
         user?.role === "super_admin"
           ? expressList.find((exp) => exp.id === userData.express)
           : undefined;
-
-      // Only include password if the user entered a new one
+ 
       const payload = {
         ...userData,
         express: expressObj,
@@ -105,7 +102,7 @@ export default function AccountSettings() {
       }
 
       alert("Profile updated successfully!");
-      setUserData({ ...userData, password: "" }); // clear password after update
+      setUserData({ ...userData, password: "" });  
     } catch (error) {
       console.error(error);
       alert("Error updating profile: " + error.message);

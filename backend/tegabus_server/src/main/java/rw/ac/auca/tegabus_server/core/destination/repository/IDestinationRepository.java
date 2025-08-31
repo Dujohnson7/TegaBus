@@ -14,4 +14,5 @@ public interface IDestinationRepository extends JpaRepository<Destination, UUID>
     Optional<Destination> findDestinationByIdAndActive(UUID id, Boolean active);
     List<Destination> findAllDestinationsByExpress_IdAndActive(UUID express_id, Boolean active);
     List<Destination> findAllByActive(Boolean active);
+
 }

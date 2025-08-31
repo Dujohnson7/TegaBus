@@ -1,5 +1,6 @@
 package rw.ac.auca.tegabus_server.core.schedule.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,6 +9,7 @@ import rw.ac.auca.tegabus_server.core.bus.model.Bus;
 import rw.ac.auca.tegabus_server.core.destination.model.Destination;
 import rw.ac.auca.tegabus_server.core.express.model.Express;
 
+import java.util.Date;
 import java.util.List;
 
 
@@ -20,13 +22,9 @@ public class Schedule extends AbstractBaseEntity {
     @JoinColumn(name = "express_id")
     private Express express;
 
-    @ManyToMany
-    @JoinTable(
-            name = "destination_schedule",
-            joinColumns = @JoinColumn(name = "schedule_id"),
-            inverseJoinColumns = @JoinColumn(name = "destination_id")
-    )
-    private List<Destination> destination;
+    @ManyToOne
+    @JoinColumn(name = "destination_id")
+    private Destination destination;
 
     @ManyToOne
     @JoinColumn(name = "pilateNo")
@@ -35,7 +33,9 @@ public class Schedule extends AbstractBaseEntity {
     @Column(name = "time", nullable = false)
     private String time;
 
-    @Column(name = "date", nullable = false)
-    private String date;
+    @Column(name = "date", nullable = false, columnDefinition = "Date")
+    @Temporal(TemporalType.DATE)
+    //@JsonFormat(pattern = "yyyy-MM-dd")
+    private Date date;
 
 }

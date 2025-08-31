@@ -46,8 +46,7 @@ export default function UserAdd() {
 const handleSubmit = async (e) => {
   e.preventDefault();
 
-  try {
-    // Convert express id to object
+  try { 
     const expressObj = expressList.find(exp => exp.id === userData.express);
     const payload = { ...userData, express: expressObj };
 

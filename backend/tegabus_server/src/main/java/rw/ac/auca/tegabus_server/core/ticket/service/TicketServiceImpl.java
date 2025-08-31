@@ -20,14 +20,9 @@ public class TicketServiceImpl implements ITicketService {
 
     @Override
     public Ticket registerTicket(Ticket theTicket) {
-        theTicket.setTickeNumber(generateTicketNumber());
+        theTicket.setDate(new Date());
         return ticketRepository.save(theTicket);
 
-    }
-
-
-    public Integer generateTicketNumber(){
-        return (int)(System.currentTimeMillis() % 10000);
     }
 
     @Override
@@ -71,17 +66,34 @@ public class TicketServiceImpl implements ITicketService {
     }
 
     @Override
-    public List<Ticket> findAllTicketsByDateBetween(Date start, Date end) {
+    public List<Ticket> findAllTicketsByDateBetweenAndState(Date start, Date end, Boolean state) {
         return ticketRepository.findTicketByDateBetween(start, end);
     }
 
     @Override
-    public List<Ticket> findAllTicketsByExpressIdAndDateBetween(UUID expressId, Date start, Date end) {
-        return ticketRepository.findAllByExpress_IdAndDateBetween(expressId, start, end);
+    public List<Ticket> findAllTicketsByExpressIdAndDateBetweenAndState(UUID expressId, Date start, Date end, Boolean state) {
+        return ticketRepository.findAllByExpress_IdAndDateBetweenAndActive(expressId, start, end, Boolean.TRUE);
     }
 
     @Override
     public List<Ticket> findAllByState(Boolean state) {
         return ticketRepository.findAllByActive(Boolean.TRUE);
     }
+
+
+    @Override
+    public List<Ticket> findAllTicketsByDestinationAndDateBetween(String destination, Date start, Date end) {
+        return ticketRepository.findAllByDestinationAndDateBetweenAndActive(destination, start, end, Boolean.TRUE);
+    }
+
+    @Override
+    public List<String> findAllDestinations() {
+        return ticketRepository.findAllDestinations();
+    }
+
+    @Override
+    public List<Ticket> findAllByExpressIdAndAState(UUID expressId, Boolean active) {
+        return ticketRepository.findAllByExpressIdAndActive(expressId, Boolean.TRUE);
+    }
+
 }

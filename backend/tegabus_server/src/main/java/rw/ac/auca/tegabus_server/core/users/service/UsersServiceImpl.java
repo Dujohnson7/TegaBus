@@ -37,8 +37,10 @@ public class UsersServiceImpl implements IUsersService {
             found.setUsername(theUsers.getUsername());
             found.setEmail(theUsers.getEmail());
             found.setPassword(theUsers.getPassword());
+            found.setProfile(theUsers.getProfile());
             found.setEmail(theUsers.getEmail());
             found.setRole(theUsers.getRole());
+            found.setExpress(theUsers.getExpress());
             if (theUsers.getPassword() != null && !theUsers.getPassword().isEmpty()) {
                 found.setPassword(passwordEncoder.encode(theUsers.getPassword()));
             }

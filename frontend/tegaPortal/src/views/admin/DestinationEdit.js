@@ -3,7 +3,7 @@ import { useHistory, useParams } from "react-router-dom";
 
 export default function DestinationUpdate() {
   const history = useHistory();
-  const { id } = useParams(); // get destination id from URL
+  const { id } = useParams();  
 
   const [destinationData, setDestinationData] = useState({
     express: "",

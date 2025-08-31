@@ -21,7 +21,6 @@ public class ReportController {
 
     private final ITicketService ticketService;
 
-    // Get all tickets (role-based)
     @GetMapping("/all")
     public ResponseEntity<List<Ticket>> getAllTickets() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -61,12 +60,13 @@ public class ReportController {
 
             List<Ticket> tickets;
             if (isSuperAdmin) {
-                tickets = ticketService.findAllTicketsByDateBetween(startDate, endDate);
+                tickets = ticketService.findAllTicketsByDateBetweenAndState(startDate, endDate, Boolean.TRUE);
             } else {
-                tickets = ticketService.findAllTicketsByExpressIdAndDateBetween(
+                tickets = ticketService.findAllTicketsByExpressIdAndDateBetweenAndState(
                         userDetails.getExpressId(),
                         startDate,
-                        endDate
+                        endDate,
+                        Boolean.TRUE
                 );
             }
 
@@ -89,4 +89,43 @@ public class ReportController {
             return ResponseEntity.badRequest().body("Error fetching ticket: " + ex.getMessage());
         }
     }
+
+    @GetMapping("/destination")
+    public ResponseEntity<List<Ticket>> getTicketsByDestination(
+            @RequestParam("destination") String destination,
+            @RequestParam("start") long startMillis,
+            @RequestParam("end") long endMillis
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetailsImpl userDetails) {
+            boolean isSuperAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+            Date startDate = new Date(startMillis);
+            Date endDate = new Date(endMillis);
+
+            List<Ticket> tickets;
+            if (isSuperAdmin) {
+                tickets = ticketService.findAllTicketsByDestinationAndDateBetween(destination, startDate, endDate);
+            } else {
+                tickets = ticketService.findAllTicketsByExpressIdAndDateBetweenAndState(
+                                userDetails.getExpressId(), startDate, endDate, Boolean.TRUE
+                        ).stream()
+                        .filter(t -> t.getSchedule().getDestination().equals(destination))
+                        .toList();
+            }
+
+            return ResponseEntity.ok(tickets);
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    @GetMapping("/destinations")
+    public ResponseEntity<List<String>> getAllDestinations() {
+        return ResponseEntity.ok(ticketService.findAllDestinations());
+    }
+
 }
