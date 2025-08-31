@@ -4,14 +4,14 @@ FROM node:18-alpine AS frontend-builder
 # Build TegaBus (Vite React app)
 WORKDIR /app/tegabus
 COPY frontend/tegabus/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 COPY frontend/tegabus/ ./
 RUN npm run build
 
 # Build TegaPortal (React app)  
 WORKDIR /app/tegaportal
 COPY frontend/tegaPortal/package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 COPY frontend/tegaPortal/ ./
 RUN npm run build
 
