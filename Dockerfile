@@ -60,8 +60,8 @@ RUN echo '#!/bin/bash' > /start.sh && \
 # Expose port
 EXPOSE 80
 
-# Copy uploads directory if it exists
-COPY backend/tegabus_server/uploads /var/www/uploads/ 2>/dev/null || true
+# Create uploads directory
+RUN mkdir -p /var/www/uploads
 
 # Start both nginx and Spring Boot
 CMD ["/start.sh"]
