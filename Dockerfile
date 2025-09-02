@@ -8,16 +8,12 @@ RUN npm ci
 COPY frontend/tegabus/ ./
 RUN chmod +x node_modules/.bin/* && npm run build
 
-# Build TegaPortal (React app) with correct base path
+# Build TegaPortal (React app)  
 WORKDIR /app/tegaportal
 COPY frontend/tegaPortal/package*.json ./
 RUN npm ci
 COPY frontend/tegaPortal/ ./
-# Set the homepage for proper asset paths
-RUN echo '{ "homepage": "/admin/" }' > package.json.tmp && \
-    cat package.json >> package.json.tmp && \
-    mv package.json.tmp package.json && \
-    chmod +x node_modules/.bin/* && npx react-scripts build
+RUN chmod +x node_modules/.bin/* && npx react-scripts build
 
 # Backend build stage
 FROM openjdk:17-jdk-slim AS backend-builder
