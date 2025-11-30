@@ -237,4 +237,4 @@ The current TegaBus application is web-based, but there are plans to explore hyb
 
 ## ACCESS URL
 
-https://tegabus.netlify.app/
+https://tegabus-xv2e.onrender.com/
